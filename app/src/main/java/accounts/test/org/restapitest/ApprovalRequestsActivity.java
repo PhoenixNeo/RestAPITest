@@ -1,0 +1,78 @@
+package accounts.test.org.restapitest;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.os.AsyncTask;
+import android.os.Bundle;
+
+
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class ApprovalRequestsActivity extends Activity {
+    final Context context = this;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_approval_requests);
+        new RetreiveRequestData(context).execute(getIntent().getStringExtra("AUTHTOKEN"), getIntent().getStringExtra("username"));
+    }
+
+    private class RetreiveRequestData extends AsyncTask<String, Void, String> {
+        Context context;
+        private ARRestAPIHelper requestHandler;
+        private String userName = "";
+        private ProgressDialog progressDialog = new ProgressDialog(ApprovalRequestsActivity.this);
+        String result = "";
+        public RetreiveRequestData(Context c){
+            this.context = c;
+        }
+
+        @Override
+        protected void onPreExecute(){
+            requestHandler = new ARRestAPIHelper();
+            progressDialog.setMessage("Retreiving Data.....");
+            progressDialog.show();
+        }
+        @Override
+        protected String doInBackground(String... params) {
+            try {
+                requestHandler.setServerURL("http://10.41.4.59:8008/api/arsys/v1/entry/AP:Detail-Signature");
+                requestHandler.setRequestMethod("GET");
+                requestHandler.setAuthToken(params[0]);
+                Map<String, String> payload = new HashMap<String, String>();
+                payload.put("fields", "values(Detail-Sig-Id, Approval Status, Approvers, Application, Process, Request");
+                payload.put("q", "'Approvers' LIKE \"%".concat(params[1].concat("%\"")));
+                requestHandler.setParams(payload);
+                requestHandler.sendRequest();
+                JSONObject result = new JSONObject(requestHandler.getResponseText().toString());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return result;
+        }
+
+        @Override
+        protected void onPostExecute(final String result){
+            super.onPostExecute(result);
+            progressDialog.dismiss();
+            final AlertDialog.Builder resultDialog = new AlertDialog.Builder(context);
+            resultDialog.setMessage(result.toString());
+            resultDialog.setCancelable(false);
+            resultDialog.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                }
+            });
+            AlertDialog alert = resultDialog.create();
+            alert.show();
+        }
+    }
+
+}
