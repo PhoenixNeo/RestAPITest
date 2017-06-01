@@ -3,4 +3,7 @@
     <string name="lblUsername">Username</string>
     <string name="lblPassword">Password</string>
     <string name="lblSignIn">Sign In</string>
+    <string name="tvRequestsListTitle">Approval Requests</string>
+    <string name="buttonApprove">Approve</string>
+    <string name="buttonReject">Reject</string>
 </resources>

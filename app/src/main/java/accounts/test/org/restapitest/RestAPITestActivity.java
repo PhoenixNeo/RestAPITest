@@ -15,6 +15,7 @@ import android.widget.EditText;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Handler;
 
 public class RestAPITestActivity extends AppCompatActivity {
     Context context;
@@ -40,7 +41,6 @@ public class RestAPITestActivity extends AppCompatActivity {
         private ARRestAPIHelper requestHandler;
         private String userName = "";
         private ProgressDialog progressDialog = new ProgressDialog(RestAPITestActivity.this);
-        String result = "";
         public ARAuthenticate(Context c){
             this.context = c;
         }
@@ -53,6 +53,7 @@ public class RestAPITestActivity extends AppCompatActivity {
         }
         @Override
         protected String doInBackground(String... params) {
+            String result = null;
             try {
                 requestHandler.setServerURL("http://10.41.4.59:8008/api/jwt/login");
                 requestHandler.setContentType("application/x-www-form-urlencoded");
@@ -63,7 +64,7 @@ public class RestAPITestActivity extends AppCompatActivity {
                 payload.put("password", params[1]);
                 requestHandler.setParams(payload);
                 requestHandler.sendRequest();
-                result = requestHandler.getResponseText().toString();
+                result = String.valueOf(requestHandler.getResponseCode()).concat(";").concat(requestHandler.getResponseText().toString());
             } catch (Exception e) {
                 Log.d("RESTTEST", e.getMessage());
             }
@@ -74,21 +75,29 @@ public class RestAPITestActivity extends AppCompatActivity {
         protected void onPostExecute(final String result){
             super.onPostExecute(result);
             progressDialog.dismiss();
-            final AlertDialog.Builder resultDialog = new AlertDialog.Builder(context);
-            resultDialog.setMessage(result);
-            resultDialog.setCancelable(false);
-            resultDialog.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dialog.dismiss();
-                    Intent i = new Intent(getBaseContext(), ApprovalRequestsActivity.class);
-                    i.putExtra("AUTHTOKEN",result);
-                    i.putExtra("username", userName);
-                    context.startActivity(i);
-                }
-            });
-            AlertDialog alert = resultDialog.create();
-            alert.show();
+            String[] code = result.split(";");
+            if(code[0].equalsIgnoreCase("200")){
+                progressDialog.setMessage("Signin Successful...Loading Requests");
+                progressDialog.incrementProgressBy(5);
+                progressDialog.show();
+                Intent i = new Intent(getBaseContext(), ApprovalRequestsActivity.class);
+                i.putExtra("AUTHTOKEN", code[1]);
+                i.putExtra("username", userName);
+                context.startActivity(i);
+            }
+            else{
+                final AlertDialog.Builder resultDialog = new AlertDialog.Builder(context);
+                resultDialog.setMessage("Authorization failed...");
+                resultDialog.setCancelable(false);
+                resultDialog.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+                AlertDialog alert = resultDialog.create();
+                alert.show();
+            }
         }
     }
 }
